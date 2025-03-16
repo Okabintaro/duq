@@ -55,3 +55,6 @@ unfixable = []
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
+
+[tool.basedpyright]
+allowedUntypedLibraries = ["sqlglot"]

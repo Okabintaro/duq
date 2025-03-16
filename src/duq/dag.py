@@ -44,11 +44,11 @@ class Dag:
             select = model.tree
             assert isinstance(select, expressions.Select)  # noqa: S101
 
-            ctas = select.ctas(model.name) # pyright: ignore[reportUnknownMemberType]
+            ctas = select.ctas(model.name)
             if use_views:
                 ctas.args["kind"] = "VIEW"
 
-            sql_ctas: str = ctas.sql(dialect="duckdb", pretty=True) # pyright: ignore[reportUnknownMemberType]
+            sql_ctas: str = ctas.sql(dialect="duckdb", pretty=True)
             script += sql_ctas
             script += ";\n\n"
 
