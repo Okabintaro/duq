@@ -29,6 +29,12 @@ class Dag:
             }
         return cls(graph, models={ModelName(model.name): model for model in models})
 
+    @classmethod
+    def from_sql_dir(cls, sql_dir: Path, glob: str = "*.sql") -> "Dag":
+        """Create a DAG by searching a directory of SQL files recursively."""
+        models = [SqlModel.from_file(file) for file in sql_dir.rglob(glob)]
+        return cls.from_sql_models(models)
+
     def topo_sort(self) -> list[ModelName]:
         """Return a topological sort of the DAG."""
         sorter = TopologicalSorter(self.graph)
@@ -37,17 +43,14 @@ class Dag:
     def to_script(self, use_views: bool = False) -> str:
         """Generate a sql script that is executable by duckdb."""
         toposort = self.topo_sort()
-        script = ""
-        for model_name in toposort:
-            model = self.models[model_name]
-            sql_ctas: str = model.as_ctas(as_view=use_views).sql(
-                dialect="duckdb",
-                pretty=True,
-            )
-            script += sql_ctas
-            script += ";\n\n"
+        toposort_models = [self.models[model_name] for model_name in toposort]
 
-        return script
+        models_sql = [
+            f"""-- {model.name} ({model.filepath})\n{model.as_ctas(as_view=use_views).sql(dialect='duckdb', pretty=True)};"""
+            for model in toposort_models
+        ]
+
+        return "\n\n".join(models_sql)
 
     def execute_sequentially(self, db_path: str | Path) -> None:
         """Execute all SQL models in the DAG sequentially."""
