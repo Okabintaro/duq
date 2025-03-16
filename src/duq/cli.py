@@ -16,21 +16,8 @@ def main(sql_dir: Path) -> None:
     """Process SQL files in the specified directory."""
     files = sql_dir.rglob("*.sql") # TODO: Make glob a parameter?
     models = [SqlModel.from_file(file) for file in files]
-
-    print("All models")
-    for model in models:
-        print("-", model.name)
-
-    source_models = [m for m in models if m.is_source_model()]
-    print("Source models")
-    for model in source_models:
-        print("-", model.name)
-
     dag = Dag.from_sql_models(models)
-    print("DAG")
-    print(dag.graph)
-    print("Sorted")
-    print(dag.topo_sort())
+    print(dag.to_script(use_views=True))
 
 if __name__ == "__main__":
     main()

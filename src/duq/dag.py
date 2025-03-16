@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from graphlib import TopologicalSorter
 from typing import NewType
 
+from sqlglot import expressions
+
 from duq.sql_model import SqlModel
 
 ModelName = NewType("ModelName", str)
@@ -32,3 +34,24 @@ class Dag:
         """Return a topological sort of the DAG."""
         sorter = TopologicalSorter(self.graph)
         return list(sorter.static_order())
+
+    def to_script(self, use_views: bool = False) -> str:  # noqa: FBT001, FBT002
+        """Generate a sql script that is executable by duckdb."""
+        toposort = self.topo_sort()
+        script = ""
+        for model_name in toposort:
+            model = self.models[model_name]
+            select = model.tree
+            assert isinstance(select, expressions.Select)  # noqa: S101
+
+            ctas = select.ctas(model.name) # pyright: ignore[reportUnknownMemberType]
+            if use_views:
+                ctas.args["kind"] = "VIEW"
+
+            sql_ctas: str = ctas.sql(dialect="duckdb", pretty=True) # pyright: ignore[reportUnknownMemberType]
+            script += sql_ctas
+            script += ";\n\n"
+
+        return script
+
+
