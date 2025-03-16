@@ -2,6 +2,34 @@
 
 Small DuckDB Orchestrator, inspired by [SQLMesh], [yato] and [crabwalk].
 
+## Install
+
+I don't plan to publish this project to pypi(name already taken).
+But you can easily install it using [uv]:
+
+```shell
+uv tool install git+https://github.com/Okabintaro/duq
+```
+
+## Usage
+
+```shell
+# View the execution plan without running it
+duq /path/to/sql/models plan
+
+# Generate a SQL script for DuckDB
+duq /path/to/sql/models script
+
+# Execute the SQL models sequentially
+duq /path/to/sql/models run /path/to/database.ddb
+
+# Execute the SQL models in parallel
+duq /path/to/sql/models run /path/to/database.ddb --parallel
+
+# Create views instead of tables
+duq /path/to/sql/models --views run /path/to/database.ddb
+```
+
 ## Features
 
 - Parse SQL files into a dag, similar to [yato] and [sqlmesh]
@@ -26,25 +54,6 @@ Small DuckDB Orchestrator, inspired by [SQLMesh], [yato] and [crabwalk].
 
 This is a weekend learning project inspired by [yato].
 I had fun learning how [sqlglot] works using the [primer] and consider it a very good and useful library for data engineering.
-
-## Usage
-
-```shell
-# View the execution plan without running it
-duq /path/to/sql/models plan
-
-# Generate a SQL script for DuckDB
-duq /path/to/sql/models script
-
-# Execute the SQL models sequentially
-duq /path/to/sql/models run /path/to/database.ddb
-
-# Execute the SQL models in parallel
-duq /path/to/sql/models run /path/to/database.ddb --parallel
-
-# Create views instead of tables
-duq /path/to/sql/models --views run /path/to/database.ddb
-```
 
 ## Development
 
