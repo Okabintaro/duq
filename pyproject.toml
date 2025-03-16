@@ -13,7 +13,7 @@ dependencies = [
 ]
 
 [project.scripts]
-duq = "duq:main"
+duq = "duq:cli.main"
 
 [build-system]
 requires = ["hatchling"]
