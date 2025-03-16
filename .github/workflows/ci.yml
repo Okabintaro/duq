@@ -32,22 +32,14 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-uv-
     
-    - name: Sync and activate environment
+    - name: Sync environment
       run: |
         uv sync --locked
 
-    - name: Check formatting with ruff
+    - name: Lint with ruff and basedpyright
       run: |
-        uv run ruff format --check src/ tests/
-    
-    - name: Lint with ruff
-      run: |
-        uv run ruff check src/ tests/
-    
-    - name: Type check with basedpyright
-      run: |
-        uv run basedpyright src/ tests/
-    
+        uv run just check
+
     - name: Test with pytest
       run: |
-        uv run pytest -v
+        uv run just test

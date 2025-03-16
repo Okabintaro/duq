@@ -1,12 +1,13 @@
 all: fix check test
 
 fix:
-    ruff format src/ tests/
-    ruff check --fix src/ tests/
+    uv run ruff format src/ tests/
+    uv run ruff check --fix src/ tests/
 
 check:
-    ruff check src/ tests/
-    basedpyright src/ tests/
+    uv run ruff format --check src/ tests/
+    uv run ruff check src/ tests/
+    uv run basedpyright src/ tests/
 
 test:
-    pytest
+    uv run pytest -v
