@@ -1,6 +1,5 @@
 """Test the sql model."""
 
-
 from pathlib import Path
 
 import pytest
@@ -21,6 +20,7 @@ def test_parse_simple():
     assert model.source_sql == sql
     assert model.is_source_model()
 
+
 def test_parse_with_cte():
     """Test parsing a simple SQL model."""
     sql = """
@@ -35,6 +35,7 @@ def test_parse_with_cte():
     model = SqlModel.from_str(sql, filepath=Path("stg_customers.sql"))
     assert model.name == "stg_customers"
     assert model.dependencies.keys() == {"raw_customers"}
+
 
 def test_parse_source_model():
     """Test parsing a simple SQL model."""

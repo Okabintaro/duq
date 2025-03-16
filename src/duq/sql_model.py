@@ -15,15 +15,15 @@ class ParseError(Exception):
 class ExpectedSelectError(ParseError):
     """Raised when a model definition is not valid."""
 
-    def __init__(self) -> None:
-        super().__init__("Expected a SELECT statement")
+    def __init__(self, file: Path | None) -> None:
+        super().__init__(f"Expected a SELECT statement in file {file}")
+
 
 class BuildScopeError(ParseError):
     """Raised when we can't build the scope."""
 
     def __init__(self) -> None:
         super().__init__("Could not build the scope using sqlglot.")
-
 
 
 @dataclass
@@ -42,7 +42,7 @@ class SqlModel:
         """Create a SqlModel instance from a file."""
         tree = sqlglot.parse_one(sql)  # pyright: ignore[reportUnknownMemberType]
         if not isinstance(tree, expressions.Select):
-            raise ExpectedSelectError
+            raise ExpectedSelectError(filepath)
 
         root = build_scope(tree)
         if root is None:
@@ -50,14 +50,11 @@ class SqlModel:
 
         tables = [
             source
-            for scope in root.traverse() # pyright: ignore[reportUnknownVariableType]
-            for _alias, (_node, source) in scope.selected_sources.items() # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
+            for scope in root.traverse()  # pyright: ignore[reportUnknownVariableType]
+            for _alias, (_node, source) in scope.selected_sources.items()  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
             if isinstance(source, expressions.Table)
         ]
-        dependencies = {
-            table.name: table
-            for table in tables
-        }
+        dependencies = {table.name: table for table in tables}
 
         # Assign a name to the model by filename
         model_name = tree.name
@@ -84,3 +81,13 @@ class SqlModel:
     def is_source_model(self) -> bool:
         """Return True if the model is a source model."""
         return all(table.name == "" for table in self.dependencies.values())
+
+    def as_ctas(self, as_view: bool = False) -> expressions.Create:
+        """Return a CTAS expression for the model."""
+        select = self.tree
+        assert isinstance(select, expressions.Select)  # noqa: S101
+
+        ctas = select.ctas(self.name)
+        if as_view:
+            ctas.args["kind"] = "VIEW"
+        return ctas

@@ -73,8 +73,35 @@ def test_jaffle_shop_script():
         except FileNotFoundError:
             pytest.skip("DuckDB is not available")
         except subprocess.CalledProcessError as e:
-            pytest.fail(f"DuckDB script execution failed: {e.stderr}") # pyright: ignore[reportAny]
-
+            pytest.fail(f"DuckDB script execution failed: {e.stderr}")  # pyright: ignore[reportAny]
 
     run_duckdb(script_tables)
     run_duckdb(script_views)
+
+
+@pytest.mark.skipif(
+    not example_path.exists(),
+    reason="Jaffle shop example directory does not exist",
+)
+def test_jaffle_shop_execute_sequential():
+    """Test the jaffle shop example with sequential execution."""
+    assert example_path.exists()
+    files = example_path.rglob("*.sql")
+    models = [SqlModel.from_file(file) for file in files]
+    assert len(models) > 1
+    dag = Dag.from_sql_models(models)
+    dag.execute_sequentially(":memory:")
+
+
+@pytest.mark.skipif(
+    not example_path.exists(),
+    reason="Jaffle shop example directory does not exist",
+)
+def test_jaffle_shop_execute_parallel():
+    """Test the jaffle shop example with parallel execution."""
+    assert example_path.exists()
+    files = example_path.rglob("*.sql")
+    models = [SqlModel.from_file(file) for file in files]
+    assert len(models) > 1
+    dag = Dag.from_sql_models(models)
+    dag.execute_parallel(":memory:")
