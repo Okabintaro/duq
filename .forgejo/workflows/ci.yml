@@ -13,7 +13,7 @@ on:
 jobs:
   test:
     name: Lint and Test
-    runs-on: ubuntu-latest
+    runs-on: codeberg-small
     container:
       image: ghcr.io/astral-sh/uv:0.6.6-python3.12-bookworm-slim
 
