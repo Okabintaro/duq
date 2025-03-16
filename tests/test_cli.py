@@ -24,6 +24,3 @@ def test_jaffle_shop():
     assert result.exit_code == 0
     result = runner.invoke(cli, [model_path, "run", ":memory:"])
     assert result.exit_code == 0
-
-
-test_jaffle_shop()
