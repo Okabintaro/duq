@@ -12,3 +12,4 @@ wheels/
 # Custom
 TODO.md
 examples/
+.vscode/

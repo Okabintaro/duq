@@ -36,8 +36,17 @@ select = ["ALL"]
 ignore = [
     "T201", # print
     "D104", # Missing docstring in public package, TODO: Remove
-    # "D211", # Incompatible with D203
-    # "D213" # Incompatible with D213
+    # Allow TODOs for now
+    "TD",
+    "FIX",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["E402"]
+"**/{tests,docs,tools}/*" = [
+    "E402",
+    "ANN201", # Ignore missing -> None in tests
+    "S101", # Allow assert for pytest
 ]
 
 # Allow fix for all enabled rules (when `--fix`) is provided.
