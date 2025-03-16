@@ -5,6 +5,7 @@ from pathlib import Path
 
 import sqlglot
 from sqlglot import expressions
+from sqlglot.optimizer.scope import build_scope
 
 
 class ParseError(Exception):
@@ -16,6 +17,13 @@ class ExpectedSelectError(ParseError):
 
     def __init__(self) -> None:
         super().__init__("Expected a SELECT statement")
+
+class BuildScopeError(ParseError):
+    """Raised when we can't build the scope."""
+
+    def __init__(self) -> None:
+        super().__init__("Could not build the scope using sqlglot.")
+
 
 
 @dataclass
@@ -36,14 +44,22 @@ class SqlModel:
         if not isinstance(tree, expressions.Select):
             raise ExpectedSelectError
 
-        ctes = list(tree.find_all(expressions.CTE))
-        cte_names = {cte.alias for cte in ctes}
+        root = build_scope(tree)
+        if root is None:
+            raise BuildScopeError
+
+        tables = [
+            source
+            for scope in root.traverse() # pyright: ignore[reportUnknownVariableType]
+            for _alias, (_node, source) in scope.selected_sources.items() # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
+            if isinstance(source, expressions.Table)
+        ]
         dependencies = {
-            tree.name: tree
-            for tree in tree.find_all(expressions.Table)
-            if tree.name not in cte_names
+            table.name: table
+            for table in tables
         }
 
+        # Assign a name to the model by filename
         model_name = tree.name
         if len(model_name) == 0 and filepath is not None:
             filename = filepath.name.lower()
