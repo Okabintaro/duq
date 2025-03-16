@@ -40,7 +40,8 @@ ignore = [
     # Allow TODOs for now
     "TD",
     "FIX",
-    "FBT"
+    "FBT",
+    "COM812", # Allow missing trailing commas?
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -59,4 +60,4 @@ unfixable = []
 convention = "numpy"
 
 [tool.basedpyright]
-allowedUntypedLibraries = ["sqlglot", "duckdb"]
+allowedUntypedLibraries = ["sqlglot", "duckdb", "click"]

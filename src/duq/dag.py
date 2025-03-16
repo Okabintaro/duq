@@ -10,6 +10,10 @@ from duq.sql_model import SqlModel
 ModelName = NewType("ModelName", str)
 
 
+class ExecutionError(Exception):
+    """An exception raised when a node fails to execute."""
+
+
 @dataclass
 class Dag:
     """A directed acyclic graph of SQL models."""
@@ -46,13 +50,18 @@ class Dag:
         toposort_models = [self.models[model_name] for model_name in toposort]
 
         models_sql = [
-            f"""-- {model.name} ({model.filepath})\n{model.as_ctas(as_view=use_views).sql(dialect='duckdb', pretty=True)};"""
+            f"-- {model.name} ({model.filepath})\n"  # pyright: ignore[reportImplicitStringConcatenation]
+            f"{model.as_ctas(as_view=use_views).sql(dialect='duckdb', pretty=True)};"
             for model in toposort_models
         ]
 
         return "\n\n".join(models_sql)
 
-    def execute_sequentially(self, db_path: str | Path) -> None:
+    def execute_sequentially(
+        self,
+        db_path: str | Path,
+        use_views: bool = False,
+    ) -> None:
         """Execute all SQL models in the DAG sequentially."""
         import duckdb
 
@@ -61,19 +70,16 @@ class Dag:
         toposort = self.topo_sort()
         for model_name in toposort:
             model = self.models[model_name]
-            ctas_sql = model.as_ctas().sql(dialect="duckdb")
-            print(f"Executing {model_name}")
+            ctas_sql = model.as_ctas(as_view=use_views).sql(dialect="duckdb")
+            print(f"Running {model_name}")
             _ = conn.execute(ctas_sql)
 
-    def execute_parallel(self, db_path: str | Path) -> None:
+    def execute_parallel(self, db_path: str | Path, use_views: bool = False) -> None:
         """Execute all SQL models in the DAG in parallel using a ThreadPoolExecutor.
 
         This method executes each SQL model in the DAG in topological order,
         using a ThreadPoolExecutor to parallelize the execution.
         For the jaffle shop example this actually didn't improve performance.
-
-        Args:
-            db_path: Path to the DuckDB database file.
         """
         from concurrent.futures import Future, ThreadPoolExecutor
 
@@ -83,9 +89,9 @@ class Dag:
             """Execute a single node in the DAG."""
             print(f"Starting {node}")
             model = self.models[node]
-            ctas_sql = model.as_ctas().sql(dialect="duckdb")
+            ctas_sql = model.as_ctas(as_view=use_views).sql(dialect="duckdb")
             _ = connection.execute(ctas_sql)
-            print(node)
+            print(f"Finished {node}")
 
         connection = duckdb.connect(db_path)
         try:
@@ -97,7 +103,6 @@ class Dag:
 
                 while sorter.is_active():
                     ready_nodes = list(sorter.get_ready())
-                    print(f"Submitting {len(ready_nodes)} jobs")
                     for node in ready_nodes:
                         futures[node] = executor.submit(execute_node, node)
 
@@ -105,9 +110,8 @@ class Dag:
                         try:
                             futures[node].result()  # Wait for the task to complete
                             sorter.done(node)
-                        except Exception as e:  # noqa: BLE001
-                            print(f"Failed to execute node {node}: {e}")
-                            # Still mark as done to allow other nodes to proceed
-                            sorter.done(node)
+                        except Exception as e:
+                            msg = f"Failed to execute node {node}: {e}"
+                            raise ExecutionError(msg) from e
         finally:
             connection.close()
